@@ -1717,3 +1717,38 @@ it.each(["search_id", "scope", "query", "offset"])("ignores malformed search fra
   delete event[key];
   expect(await eventsOf([event])).toEqual([]);
 });
+
+describe("web activity", () => {
+  const web = (events: AssistantEvent[] | undefined) =>
+    events!.filter((e) => e.type.startsWith("web_"));
+
+  it("completes a search and a read from their start frames", async () => {
+    const events = await eventsOf([
+      { type: "web_search_start", search_id: "ws-1", query: "late payment interest" },
+      {
+        type: "web_search",
+        search_id: "ws-1",
+        query: "late payment interest",
+        results: [{ url: "https://www.legislation.gov.uk/ukpga/1998/20", title: "Late Payment Act" }],
+      },
+      { type: "web_read_start", read_id: "wr-1", url: "https://b.example/page" },
+      {
+        type: "web_read", read_id: "wr-1", url: "https://b.example/moved",
+        error: "This page could not be read.", error_code: "unreadable",
+      },
+    ]);
+    expect(web(events)).toEqual([
+      {
+        type: "web_search",
+        search_id: "ws-1",
+        query: "late payment interest",
+        results: [{ url: "https://www.legislation.gov.uk/ukpga/1998/20", title: "Late Payment Act" }],
+        isStreaming: false,
+      },
+      {
+        type: "web_read", read_id: "wr-1", url: "https://b.example/moved",
+        error: "This page could not be read.", isStreaming: false,
+      },
+    ]);
+  });
+});

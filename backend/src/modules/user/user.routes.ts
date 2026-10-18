@@ -80,6 +80,9 @@ import {
     saveCustomInstructions,
     validateResponseStylePayload,
     saveResponseStyle,
+    getWebSearchSettings,
+    validateWebSearchPayload,
+    saveWebSearchSettings,
 } from "./user.service";
 
 export const userRouter = Router();
@@ -356,6 +359,31 @@ userRouter.put("/response-style", requireAuth, asyncRoute(async (req, res) => {
     res.json(result.data);
 }));
 
+// GET /user/web-search
+userRouter.get("/web-search", requireAuth, asyncRoute(async (_req, res) => {
+    const userId = res.locals.userId as string;
+    const result = await getWebSearchSettings(createServerSupabase(), userId);
+    if (!result.ok) return void sendServiceFailure(res, result);
+    res.setHeader("Cache-Control", "private, no-store");
+    res.json(result.data);
+}));
+
+// PUT /user/web-search
+userRouter.put("/web-search", requireAuth, asyncRoute(async (req, res) => {
+    const parsed = validateWebSearchPayload(req.body);
+    if (!parsed.ok) return void res.status(400).json({ detail: parsed.detail });
+
+    const userId = res.locals.userId as string;
+    const result = await saveWebSearchSettings(
+        createServerSupabase(),
+        userId,
+        parsed.update,
+    );
+    if (!result.ok) return void sendServiceFailure(res, result);
+    res.setHeader("Cache-Control", "private, no-store");
+    res.json(result.data);
+}));
+
 // POST /user/onboarding
 userRouter.post("/onboarding", requireAuth, asyncRoute(async (req, res) => {
     const parsed = validateOnboardingPayload(req.body);
@@ -455,7 +483,12 @@ userRouter.patch(
     requireMfaIfEnrolled,
     asyncRoute(async (req, res) => {
         const provider = normalizeApiKeyProvider(req.params.provider);
-        if (!provider || provider === "courtlistener" || typeof req.body?.enabled !== "boolean") {
+        if (
+            !provider ||
+            provider === "courtlistener" ||
+            provider === "brave" ||
+            typeof req.body?.enabled !== "boolean"
+        ) {
             return void res.status(400).json({ detail: "A supported provider and boolean enabled value are required." });
         }
         const result = await setApiKeyEnabled(

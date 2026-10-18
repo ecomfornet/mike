@@ -15,6 +15,11 @@ import { PreResponseWrapper } from "./PreResponseWrapper";
 import { ResponseStatus, type StatusState } from "./message/ResponseStatus";
 import { DocSearchBlock } from "./message/DocSearchBlock";
 import {
+    WebReadBlock,
+    WebSearchBlock,
+    WebSourcesBlock,
+} from "./message/WebActivityBlock";
+import {
     connectorToolLabel,
     eventErrorMessage,
     toolCallLabel,
@@ -189,7 +194,8 @@ export function AssistantMessage({
         event.type !== "error" &&
         event.type !== "ask_inputs_response" &&
         event.type !== "case_citation" &&
-        event.type !== "case_opinions";
+        event.type !== "case_opinions" &&
+        event.type !== "web_sources";
 
     // Find the last content event so its raw text can be smoothed before
     // citation preprocessing — slicing already-preprocessed text would risk
@@ -273,6 +279,10 @@ export function AssistantMessage({
     const canOpenCitationSource = (citation: Citation) =>
         !!onOpenCitationSource ||
         (citation.kind !== "case" && !!onOpenDocument);
+    // The pages an answer cites follow the answer, not the steps before it.
+    const webSources = (events ?? []).flatMap((event) =>
+        event.type === "web_sources" ? event.sources : [],
+    );
     const showCitationBlock =
         !!citationStatus || (!isStreaming && citations.length > 0);
     const handleCopy = async () => {
@@ -489,6 +499,14 @@ export function AssistantMessage({
         }
         if (event.type === "doc_search") {
             return <DocSearchBlock key={globalIdx} event={event}
+                isStreaming={event.isStreaming} showConnector={showConnector} />;
+        }
+        if (event.type === "web_search") {
+            return <WebSearchBlock key={globalIdx} event={event}
+                isStreaming={event.isStreaming} showConnector={showConnector} />;
+        }
+        if (event.type === "web_read") {
+            return <WebReadBlock key={globalIdx} event={event}
                 isStreaming={event.isStreaming} showConnector={showConnector} />;
         }
         if (event.type === "doc_find") {
@@ -1140,6 +1158,12 @@ export function AssistantMessage({
                             })}
                         </div>
                     )}
+
+                {webSources.length > 0 && (
+                    <div className="mt-2 mb-3">
+                        <WebSourcesBlock sources={webSources} />
+                    </div>
+                )}
 
                 {showCitationBlock && (
                     <CitationsBlock

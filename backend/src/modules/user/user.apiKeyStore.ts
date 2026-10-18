@@ -30,7 +30,8 @@ export type ApiKeyProvider =
     | "vertex"
     | "xai"
     | "custom"
-    | "courtlistener";
+    | "courtlistener"
+    | "brave";
 export type ApiKeySource = "user" | "org" | "env" | null;
 
 /**
@@ -92,6 +93,7 @@ const PROVIDERS: ApiKeyProvider[] = [
     "xai",
     "custom",
     "courtlistener",
+    "brave",
 ];
 
 const SETTINGS_PROVIDERS: readonly SettingsApiKeyProvider[] = [
@@ -183,6 +185,8 @@ function envApiKey(provider: ApiKeyProvider): string | null {
             return null;
         case "courtlistener":
             return process.env.COURTLISTENER_API_TOKEN?.trim() || null;
+        case "brave":
+            return process.env.BRAVE_SEARCH_API_KEY?.trim() || null;
         default:
             return null;
     }
@@ -336,6 +340,7 @@ function envApiKeyStatus(): ApiKeyStatus {
         xai: false,
         custom: false,
         courtlistener: false,
+        brave: false,
         sources: {
             claude: null,
             gemini: null,
@@ -351,6 +356,7 @@ function envApiKeyStatus(): ApiKeyStatus {
             xai: null,
             custom: null,
             courtlistener: null,
+            brave: null,
         },
         settings: {},
         enabled: {},
@@ -418,6 +424,7 @@ function envApiKeys(): UserApiKeys {
         xai: envApiKey("xai"),
         custom: envApiKey("custom"),
         courtlistener: envApiKey("courtlistener"),
+        brave: envApiKey("brave"),
     };
     const envBedrock = envBedrockCredentials();
     const envAzure = envAzureCredentials();
