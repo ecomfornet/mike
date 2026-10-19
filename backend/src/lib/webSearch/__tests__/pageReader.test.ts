@@ -38,6 +38,7 @@ async function unreadable(promise: Promise<unknown>): Promise<string> {
 
 beforeEach(() => {
     guardedFetch.mockReset();
+    vi.unstubAllGlobals();
 });
 
 describe("readWebPage", () => {
@@ -71,6 +72,43 @@ describe("readWebPage", () => {
         await expect(unreadable(readWebPage("https://example.test/a.zip"))).resolves.toBe(
             "This kind of file cannot be read as a web page.",
         );
+    });
+
+    it.each([
+        [
+            "tavily",
+            { results: [{ url: "https://law.test/ca2006", raw_content: "# Companies Act 2006" }] },
+            null,
+        ],
+        [
+            "deepseek",
+            { title: "Companies Act 2006", content: "# Companies Act 2006" },
+            "Companies Act 2006",
+        ],
+    ] as const)("reads the page through %s when it can", async (backend, body, title) => {
+        vi.stubGlobal("fetch", vi.fn(async () => Response.json(body)));
+
+        const result = await readWebPage("https://law.test/ca2006", {
+            account: { backend, apiKey: "key" },
+        });
+
+        expect(result).toEqual({
+            url: "https://law.test/ca2006",
+            title,
+            text: "# Companies Act 2006",
+        });
+        expect(guardedFetch).not.toHaveBeenCalled();
+    });
+
+    it("reads a page the search service could not", async () => {
+        vi.stubGlobal("fetch", vi.fn(async () => new Response(null, { status: 404 })));
+        guardedFetch.mockResolvedValue(page("The order.", "text/plain"));
+
+        const result = await readWebPage("https://law.test/order.txt", {
+            account: { backend: "deepseek", apiKey: "key" },
+        });
+
+        expect(result.text).toBe("The order.");
     });
 
     it("explains a blocked address", async () => {

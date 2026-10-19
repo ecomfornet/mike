@@ -303,7 +303,7 @@ export type McpToolEvent = {
 export type WebSource = { url: string; title?: string };
 
 export type WebToolErrorCode =
-  /** Mike's search has no Brave Search key to use. */
+  /** Mike's search has no key for the chosen search service. */
   | "not_configured"
   /** The search API refused the key: invalid, or its plan does not cover the request. */
   | "rejected"

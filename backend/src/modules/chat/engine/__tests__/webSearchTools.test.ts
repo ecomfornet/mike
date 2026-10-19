@@ -25,7 +25,7 @@ const NONCE = "webnonce";
 function context(userMessage = "") {
   return {
     state: createWebTurnState(userMessage),
-    apiKey: "brave-key",
+    account: { backend: "brave" as const, apiKey: "brave-key" },
     nonce: NONCE,
     write: () => {},
   };
@@ -52,7 +52,7 @@ describe("runWebToolCall", () => {
     const { content, event } = await runWebToolCall(search("ai act"), context());
 
     expect(searchWeb).toHaveBeenCalledWith("ai act", {
-      apiKey: "brave-key",
+      account: { backend: "brave", apiKey: "brave-key" },
       signal: undefined,
     });
     expect(content).toBe(
@@ -109,6 +109,10 @@ describe("runWebToolCall", () => {
     expect(readWebPage).toHaveBeenCalledOnce();
     expect(content.startsWith("Web page: https://law.test/act\n<untrusted-content")).toBe(true);
     expect(content).toContain("Title: A page");
+    expect(readWebPage).toHaveBeenCalledWith("https://law.test/act", {
+      signal: undefined,
+      account: { backend: "brave", apiKey: "brave-key" },
+    });
     expect(
       content.match(new RegExp(`</untrusted-content nonce="${NONCE}">`, "g")),
     ).toHaveLength(1);

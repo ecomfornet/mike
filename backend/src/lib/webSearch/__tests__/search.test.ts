@@ -22,7 +22,7 @@ const BRAVE_RESULTS = {
     },
 };
 
-const apiKey = "brave-key";
+const brave = { account: { backend: "brave", apiKey: "brave-key" } } as const;
 
 function harness(responses: Response[]) {
     const fetch = vi.fn(async (_url: unknown, _init?: unknown) => responses.shift()!);
@@ -35,7 +35,7 @@ describe("Mike's web search", () => {
     it("needs a key", async () => {
         const { search, fetch } = harness([]);
 
-        await expect(search("s172", { apiKey: null })).rejects.toMatchObject({
+        await expect(search("s172", { account: null })).rejects.toMatchObject({
             code: "not_configured",
         });
         expect(fetch).not.toHaveBeenCalled();
@@ -44,7 +44,7 @@ describe("Mike's web search", () => {
     it("searches Brave with its key, keeps only web pages and decodes entities", async () => {
         const { search, fetch } = harness([json(BRAVE_RESULTS)]);
 
-        const results = await search("directors duties s172", { apiKey });
+        const results = await search("directors duties s172", brave);
 
         expect(results).toEqual([
             {
@@ -61,13 +61,40 @@ describe("Mike's web search", () => {
     });
 
     it.each([
-        [401, "rejected"],
-        [422, "rejected"],
-        [429, "failed"],
-    ])("reports HTTP %s as %s", async (status, code) => {
+        ["tavily", { results: [{ url: "https://law.test/a", title: "Act A", content: "About A." }] }],
+        [
+            "deepseek",
+            {
+                results: [
+                    { url: "https://law.test/a", title: "Act A", snippet: "A.", summary: "About A." },
+                ],
+            },
+        ],
+    ] as const)("searches %s with a bearer key", async (backend, body) => {
+        const { search, fetch } = harness([json(body)]);
+
+        const results = await search("act a", { account: { backend, apiKey: "key" } });
+
+        expect(results).toEqual([
+            { url: "https://law.test/a", title: "Act A", snippet: "About A." },
+        ]);
+        const [, init] = fetch.mock.calls[0] as [string, RequestInit];
+        expect(init.headers).toMatchObject({ authorization: "Bearer key" });
+        expect(JSON.parse(String(init.body))).toMatchObject({ query: "act a" });
+    });
+
+    it.each([
+        ["brave", 401, "rejected"],
+        ["brave", 422, "rejected"],
+        ["brave", 429, "failed"],
+        ["tavily", 432, "rejected"],
+        ["deepseek", 402, "rejected"],
+    ] as const)("reports %s HTTP %s as %s", async (backend, status, code) => {
         const { search } = harness([json({}, status)]);
 
-        await expect(search("q", { apiKey })).rejects.toMatchObject({ code });
+        await expect(
+            search("q", { account: { backend, apiKey: "key" } }),
+        ).rejects.toMatchObject({ code });
     });
 
     it("spaces out parallel requests made with the same key", async () => {
@@ -78,8 +105,8 @@ describe("Mike's web search", () => {
         const signal = new AbortController().signal;
 
         await Promise.all([
-            search("one", { apiKey }),
-            search("two", { apiKey, signal }),
+            search("one", brave),
+            search("two", { ...brave, signal }),
         ]);
 
         expect(fetch).toHaveBeenCalledTimes(2);

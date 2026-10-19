@@ -1,8 +1,8 @@
 import { setTimeout as sleep } from "node:timers/promises";
 
-import { BraveSearchError, searchBrave } from "./brave";
-
-export type WebSearchResult = { url: string; title: string; snippet: string };
+import { SearchApiError } from "./http";
+import { SEARCH_SERVICES } from "./services";
+import type { WebSearchAccount, WebSearchResult } from "./types";
 
 export class WebSearchUnavailableError extends Error {
     constructor(
@@ -14,10 +14,8 @@ export class WebSearchUnavailableError extends Error {
     }
 }
 
-// A free Brave Search key allows one request a second, and a turn's searches
-// run in parallel. The deployment's key is shared by everyone without their
-// own, so the wait for a turn is capped.
-const REQUEST_SPACING_MS = 1_100;
+// A turn's searches run in parallel, and a deployment's key is shared by
+// everyone without their own, so the wait for a rate-limited key is capped.
 const MAX_QUEUE_WAIT_MS = 10_000;
 
 type Deps = {
@@ -29,29 +27,43 @@ type Deps = {
 export function createWebSearch(deps: Deps) {
     const nextSlotAt = new Map<string, number>();
 
-    async function waitForSlot(apiKey: string, signal?: AbortSignal) {
+    async function waitForSlot(
+        apiKey: string,
+        spacingMs: number,
+        signal?: AbortSignal,
+    ) {
         const now = deps.now();
         const slot = Math.max(now, nextSlotAt.get(apiKey) ?? now);
         if (slot - now > MAX_QUEUE_WAIT_MS) {
             throw new WebSearchUnavailableError("failed");
         }
-        nextSlotAt.set(apiKey, slot + REQUEST_SPACING_MS);
+        nextSlotAt.set(apiKey, slot + spacingMs);
         if (slot > now) await deps.sleep(slot - now, signal);
     }
 
     return async function searchWeb(
         query: string,
-        options: { apiKey: string | null | undefined; signal?: AbortSignal },
+        options: { account: WebSearchAccount | null; signal?: AbortSignal },
     ): Promise<WebSearchResult[]> {
-        const { apiKey, signal } = options;
-        if (!apiKey) throw new WebSearchUnavailableError("not_configured");
+        const { account, signal } = options;
+        if (!account) throw new WebSearchUnavailableError("not_configured");
+        const { apiKey } = account;
+        const service = SEARCH_SERVICES[account.backend];
 
-        await waitForSlot(apiKey, signal);
+        if (service.requestSpacingMs) {
+            await waitForSlot(apiKey, service.requestSpacingMs, signal);
+        }
         try {
-            return await searchBrave(query, apiKey, { fetch: deps.fetch, signal });
+            return await service.search(
+                query.slice(0, service.maxQueryChars),
+                apiKey,
+                { fetch: deps.fetch, signal },
+            );
         } catch (error) {
             if (signal?.aborted) throw error;
-            const rejected = error instanceof BraveSearchError && error.rejected;
+            const rejected =
+                error instanceof SearchApiError &&
+                service.rejectedStatuses.includes(error.status);
             throw new WebSearchUnavailableError(rejected ? "rejected" : "failed", {
                 cause: error,
             });

@@ -24,7 +24,7 @@ vi.mock("@/app/contexts/UserProfileContext", () => ({
   useUserProfile: () => ({
     profile: {
       apiKeys: Object.fromEntries(
-        ["claude", "openai", "brave"].map((provider) => [
+        ["claude", "openai", "brave", "tavily", "deepseek"].map((provider) => [
           provider,
           {
             configured: keys.configured.includes(provider),
@@ -71,17 +71,19 @@ describe("WebSearchSection", () => {
     expect(screen.queryByLabelText("Brave Search API Key")).toBeNull();
   });
 
-  it("asks for a Brave Search key once Brave Search is chosen", async () => {
-    keys.configured = [];
+  it("asks for a key for each search service chosen", async () => {
     vi.mocked(getWebSearchSettings).mockResolvedValue({
       ...OFF,
       enabled: true,
-      other: "brave",
+      claude: "brave",
+      other: "tavily",
     });
     render(<WebSearchSection />);
 
     expect(await screen.findByLabelText("Brave Search API Key")).toBeInTheDocument();
-    expect(trigger("All models")).toHaveTextContent("Brave Search");
+    expect(screen.getByLabelText("Tavily API Key")).toBeInTheDocument();
+    expect(screen.queryByLabelText("DeepSeek API Key")).toBeNull();
+    expect(trigger("Other models")).toHaveTextContent("Tavily");
   });
 
   it("puts the switch back and raises a notice when the save fails", async () => {

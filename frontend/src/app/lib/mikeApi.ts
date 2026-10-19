@@ -1060,7 +1060,7 @@ export async function updateResponseStyle(
 }
 
 /** Mirrors backend/src/lib/webSearch/settings.ts. */
-export const WEB_SEARCH_BACKENDS = ["brave"] as const;
+export const WEB_SEARCH_BACKENDS = ["brave", "tavily", "deepseek"] as const;
 
 export type WebSearchBackend = (typeof WEB_SEARCH_BACKENDS)[number];
 
@@ -1132,7 +1132,7 @@ export type ApiKeyProvider =
     | "xai"
     | "custom"
     | "courtlistener"
-    | "brave";
+    | WebSearchBackend;
 /**
  * Whose key a provider runs on: the person's own, their organization's, or
  * the deployment's. "org" only ever appears in an organization's status.

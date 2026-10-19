@@ -98,8 +98,16 @@ describe("runLLMStream web search", () => {
       return { fullText: "Answer" };
     });
 
-    const result = await runLLMStream({ ...baseParams(), webSearch: BRAVE });
+    const result = await runLLMStream({
+      ...baseParams(),
+      webSearch: "tavily",
+      apiKeys: { brave: "brave-key", tavily: "tavily-key" },
+    });
 
+    expect(searchWeb).toHaveBeenCalledWith(
+      "the act",
+      expect.objectContaining({ account: { backend: "tavily", apiKey: "tavily-key" } }),
+    );
     expect(runToolCalls.mock.calls[0]![0].map((c) => c.function.name)).toEqual([
       "read_document",
     ]);
@@ -122,7 +130,7 @@ describe("runLLMStream web search", () => {
       })}\n\n`,
     );
 
-    expect(chunk).toContain("Brave Search refused the request");
+    expect(chunk).toContain("the search service refused the request");
     expect(chunk).not.toContain("ECONNREFUSED");
   });
 });

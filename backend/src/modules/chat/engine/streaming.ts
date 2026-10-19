@@ -1,5 +1,5 @@
 import { teamOrgIdOf } from "../../../lib/personalOrgs";
-import type { WebSearchPlan } from "../../../lib/webSearch";
+import { webSearchAccountFor, type WebSearchPlan } from "../../../lib/webSearch";
 import { buildGoogleWorkspaceTools } from "../../../lib/integrations/googleWorkspace";
 import {
   streamChatWithTools,
@@ -337,6 +337,7 @@ export async function runLLMStream(params: {
     ? TOOLS
     : TOOLS.filter((tool) => tool.function.name !== "ask_inputs");
   const webTools = webToolsFor(webSearch);
+  const webSearchAccount = webSearchAccountFor(webSearch, apiKeys);
   const webToolNames = new Set<string>(
     webTools.map((tool) => tool.function.name),
   );
@@ -666,7 +667,7 @@ export async function runLLMStream(params: {
           webCalls.map((call) =>
             runWebToolCall(call, {
               state: webTurnState,
-              apiKey: apiKeys?.brave,
+              account: webSearchAccount,
               nonce,
               signal,
               write,

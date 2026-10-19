@@ -15,6 +15,7 @@ import {
     normalizeCustomBaseUrl,
     normalizeVertexLocation,
 } from "../../lib/llm/cloudProviders";
+import { WEB_SEARCH_BACKENDS, type WebSearchBackend } from "../../lib/webSearch";
 
 export type ApiKeyProvider =
     | "claude"
@@ -31,7 +32,7 @@ export type ApiKeyProvider =
     | "xai"
     | "custom"
     | "courtlistener"
-    | "brave";
+    | WebSearchBackend;
 export type ApiKeySource = "user" | "org" | "env" | null;
 
 /**
@@ -93,7 +94,7 @@ const PROVIDERS: ApiKeyProvider[] = [
     "xai",
     "custom",
     "courtlistener",
-    "brave",
+    ...WEB_SEARCH_BACKENDS,
 ];
 
 const SETTINGS_PROVIDERS: readonly SettingsApiKeyProvider[] = [
@@ -187,6 +188,10 @@ function envApiKey(provider: ApiKeyProvider): string | null {
             return process.env.COURTLISTENER_API_TOKEN?.trim() || null;
         case "brave":
             return process.env.BRAVE_SEARCH_API_KEY?.trim() || null;
+        case "tavily":
+            return process.env.TAVILY_API_KEY?.trim() || null;
+        case "deepseek":
+            return process.env.DEEPSEEK_SEARCH_API_KEY?.trim() || null;
         default:
             return null;
     }
@@ -341,6 +346,8 @@ function envApiKeyStatus(): ApiKeyStatus {
         custom: false,
         courtlistener: false,
         brave: false,
+        tavily: false,
+        deepseek: false,
         sources: {
             claude: null,
             gemini: null,
@@ -357,6 +364,8 @@ function envApiKeyStatus(): ApiKeyStatus {
             custom: null,
             courtlistener: null,
             brave: null,
+            tavily: null,
+            deepseek: null,
         },
         settings: {},
         enabled: {},
@@ -425,6 +434,8 @@ function envApiKeys(): UserApiKeys {
         custom: envApiKey("custom"),
         courtlistener: envApiKey("courtlistener"),
         brave: envApiKey("brave"),
+        tavily: envApiKey("tavily"),
+        deepseek: envApiKey("deepseek"),
     };
     const envBedrock = envBedrockCredentials();
     const envAzure = envAzureCredentials();

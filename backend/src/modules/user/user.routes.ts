@@ -40,6 +40,7 @@ import {
 } from "../../lib/orgs";
 import { sendOrgFailure } from "../../lib/orgFailure";
 import { configuredApiPublicUrl } from "../../lib/runtimeConfig";
+import { isWebSearchBackend } from "../../lib/webSearch";
 import {
     setUserProfilePhoto,
     bootstrapUserProfile,
@@ -486,7 +487,7 @@ userRouter.patch(
         if (
             !provider ||
             provider === "courtlistener" ||
-            provider === "brave" ||
+            isWebSearchBackend(provider) ||
             typeof req.body?.enabled !== "boolean"
         ) {
             return void res.status(400).json({ detail: "A supported provider and boolean enabled value are required." });

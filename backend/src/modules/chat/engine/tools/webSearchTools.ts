@@ -1,11 +1,13 @@
 import type { WebToolErrorCode, WebToolEvent } from "@mike/contracts";
 import type { NormalizedToolCall } from "../../../../lib/llm";
 import {
+    MAX_SEARCH_RESULTS,
     WebPageUnreadableError,
     WebSearchUnavailableError,
     readWebPage,
     searchWeb,
     type WebPage,
+    type WebSearchAccount,
     type WebSearchPlan,
     type WebSearchResult,
 } from "../../../../lib/webSearch";
@@ -29,9 +31,9 @@ If a search fails or is unavailable, say so and answer without it. Never invent 
 
 const WEB_TOOL_ERROR_MESSAGES: Record<WebToolErrorCode, string> = {
     not_configured:
-        "Web search is unavailable: no Brave Search API key is set up.",
+        "Web search is unavailable: the chosen search service has no API key set up.",
     rejected:
-        "Web search is unavailable: Brave Search refused the request. Check the Brave Search key, its plan and its rate limit.",
+        "Web search is unavailable: the search service refused the request. Check its API key, plan and rate limit.",
     unavailable: "Web search is unavailable for this model.",
     unreadable: "This page could not be read.",
     failed: "The web search did not complete.",
@@ -66,7 +68,7 @@ const SEARCH_TOOL = {
     function: {
         name: WEB_TOOL_NAMES.search,
         description:
-            "Search the web. Returns up to 10 results with title, URL and snippet. Use short, general queries about the law or public facts.",
+            `Search the web. Returns up to ${MAX_SEARCH_RESULTS} results with title, URL and snippet. Use short, general queries about the law or public facts.`,
         parameters: {
             type: "object",
             properties: {
@@ -197,7 +199,8 @@ function failure(
 
 type WebToolContext = {
     state: WebTurnState;
-    apiKey: string | null | undefined;
+    /** Mike's search service, or null when the model searches by itself. */
+    account: WebSearchAccount | null;
     nonce?: string;
     signal?: AbortSignal;
     write: (chunk: string) => void;
@@ -235,7 +238,7 @@ async function runSearch(
     let results: WebSearchResult[];
     try {
         results = await searchWeb(query, {
-            apiKey: ctx.apiKey,
+            account: ctx.account,
             signal: ctx.signal,
         });
     } catch (error) {
@@ -278,8 +281,8 @@ function positionNote(offset: number, end: number, total: number): string {
         : "";
 }
 
-async function fetchPage(url: string, ctx: WebToolContext): Promise<WebPage> {
-    const page = await readWebPage(url, { signal: ctx.signal });
+async function openPage(url: string, ctx: WebToolContext): Promise<WebPage> {
+    const page = await readWebPage(url, { signal: ctx.signal, account: ctx.account });
     const redirectedKey = pageKey(page.url);
     if (redirectedKey) {
         ctx.state.readable.add(redirectedKey);
@@ -315,7 +318,7 @@ async function runRead(
             return failed("The page-reading limit for this turn has been reached.");
         }
         ctx.state.reads += 1;
-        pending = fetchPage(url, ctx);
+        pending = openPage(url, ctx);
         ctx.state.pages.set(key, pending);
     }
     let page: WebPage;

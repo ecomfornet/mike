@@ -111,8 +111,10 @@ export type UserApiKeys = {
     /** The key for the user's own OpenAI-compatible endpoint. */
     custom?: string | null;
     courtlistener?: string | null;
-    /** The Brave Search API key for Mike's own web search (see lib/webSearch). */
+    /** Search API keys for Mike's own web search (see lib/webSearch). */
     brave?: string | null;
+    tavily?: string | null;
+    deepseek?: string | null;
     /**
      * Non-secret settings that only make sense together with the key above
      * them: the AWS region a Bedrock key belongs to, the Azure resource an

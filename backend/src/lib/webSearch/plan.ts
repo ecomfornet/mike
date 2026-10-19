@@ -4,6 +4,7 @@ import type {
     WebSearchFamily,
     WebSearchSettings,
 } from "./settings";
+import type { WebSearchAccount } from "./types";
 
 export type WebSearchPlan = "provider" | WebSearchBackend;
 
@@ -31,4 +32,14 @@ export function webSearchPlanFor(
     if (choice === "off") return null;
     if (choice === "provider") return "provider";
     return keys?.[choice] ? choice : null;
+}
+
+/** Mike's search service for a plan, or null when the model searches by itself. */
+export function webSearchAccountFor(
+    plan: WebSearchPlan | null,
+    keys: WebSearchKeys | null | undefined,
+): WebSearchAccount | null {
+    if (!plan || plan === "provider") return null;
+    const apiKey = keys?.[plan];
+    return apiKey ? { backend: plan, apiKey } : null;
 }

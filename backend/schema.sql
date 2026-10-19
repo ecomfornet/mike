@@ -624,7 +624,7 @@ $$;
 create table if not exists public.user_api_keys (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
-  provider text not null check (provider in ('claude', 'gemini', 'openai', 'mistral', 'openrouter', 'vercel', 'opencode-go', 'bedrock', 'azure', 'azure-foundry', 'vertex', 'xai', 'custom', 'courtlistener', 'brave')),
+  provider text not null check (provider in ('claude', 'gemini', 'openai', 'mistral', 'openrouter', 'vercel', 'opencode-go', 'bedrock', 'azure', 'azure-foundry', 'vertex', 'xai', 'custom', 'courtlistener', 'brave', 'tavily', 'deepseek')),
   encrypted_key text not null,
   iv text not null,
   auth_tag text not null,
@@ -662,7 +662,7 @@ create table if not exists public.org_api_keys (
   org_id uuid not null references public.organizations(id) on delete cascade,
   provider text not null
     constraint org_api_keys_provider_check
-    check (provider in ('claude', 'gemini', 'openai', 'mistral', 'openrouter', 'vercel', 'opencode-go', 'bedrock', 'azure', 'azure-foundry', 'vertex', 'xai', 'custom', 'courtlistener', 'brave')),
+    check (provider in ('claude', 'gemini', 'openai', 'mistral', 'openrouter', 'vercel', 'opencode-go', 'bedrock', 'azure', 'azure-foundry', 'vertex', 'xai', 'custom', 'courtlistener', 'brave', 'tavily', 'deepseek')),
   encrypted_key text not null,
   iv text not null,
   auth_tag text not null,
@@ -10927,5 +10927,6 @@ insert into public.schema_migrations (filename) values
   ('20261017_05_playbook_reviews.sql'),
   ('20261017_06_remove_unused_playbook_structure.sql'),
   ('20261017_07_playbook_storage_cleanup.sql'),
-  ('20261017_08_user_web_search.sql')
+  ('20261017_08_user_web_search.sql'),
+  ('20261019_01_web_search_api_keys.sql')
 on conflict (filename) do nothing;

@@ -2,12 +2,8 @@ import { isBlockedDestinationError } from "../blockedDestination";
 import { guardedFetch } from "../mcp/client";
 import { extractPdfTextForModel } from "../pdfText";
 import { withTimeout } from "./http";
-
-export type WebPage = {
-    url: string;
-    title: string | null;
-    text: string;
-};
+import { SEARCH_SERVICES } from "./services";
+import type { WebPage, WebSearchAccount } from "./types";
 
 /** A page that could not be read; the message is safe to show the model. */
 export class WebPageUnreadableError extends Error {
@@ -124,35 +120,66 @@ async function fetchPage(url: string, signal: AbortSignal | undefined) {
     }
 }
 
+async function readDirectly(
+    url: string,
+    signal: AbortSignal | undefined,
+): Promise<WebPage> {
+    const { finalUrl, contentType, body } = await fetchPage(url, signal);
+    if (isPdf(contentType, body)) {
+        return { url: finalUrl, title: null, text: await extractPdfTextForModel(body) };
+    }
+    if (contentType === "text/html" || contentType === "application/xhtml+xml") {
+        return {
+            url: finalUrl,
+            ...(await htmlToMarkdown(new TextDecoder().decode(body), finalUrl)),
+        };
+    }
+    if (contentType.startsWith("text/")) {
+        return { url: finalUrl, title: null, text: new TextDecoder().decode(body) };
+    }
+    throw new WebPageUnreadableError(
+        "This kind of file cannot be read as a web page.",
+    );
+}
+
+type ReadOptions = {
+    signal?: AbortSignal;
+    account?: WebSearchAccount | null;
+};
+
+async function readThroughSearchService(
+    url: string,
+    { signal, account }: ReadOptions,
+): Promise<WebPage | null> {
+    const service = account ? SEARCH_SERVICES[account.backend] : null;
+    if (!account || !service?.read) return null;
+    try {
+        const page = await service.read(url, account.apiKey, { fetch, signal });
+        return page.text ? page : null;
+    } catch (error) {
+        if (signal?.aborted) throw error;
+        return null;
+    }
+}
+
 /**
  * Fetches a public web page and returns its main text: article content as
- * markdown for HTML, the text layer for a PDF. Private and internal
- * addresses are refused, redirects included.
+ * markdown for HTML, the text layer for a PDF. When the chosen search service
+ * can read pages, it tries first. Private and internal addresses are refused,
+ * redirects included.
  */
 export async function readWebPage(
     url: string,
-    options: { signal?: AbortSignal } = {},
+    options: ReadOptions = {},
 ): Promise<WebPage> {
-    const { finalUrl, contentType, body } = await fetchPage(url, options.signal);
-    let page: { title: string | null; text: string };
-    if (isPdf(contentType, body)) {
-        page = { title: null, text: await extractPdfTextForModel(body) };
-    } else if (
-        contentType === "text/html" ||
-        contentType === "application/xhtml+xml"
-    ) {
-        page = await htmlToMarkdown(new TextDecoder().decode(body), finalUrl);
-    } else if (contentType.startsWith("text/")) {
-        page = { title: null, text: new TextDecoder().decode(body) };
-    } else {
-        throw new WebPageUnreadableError(
-            "This kind of file cannot be read as a web page.",
-        );
-    }
-
+    // Search services cannot read every page, so one they could not read is
+    // read here instead.
+    const page =
+        (await readThroughSearchService(url, options)) ??
+        (await readDirectly(url, options.signal));
     const text = page.text.trim();
     if (!text) {
         throw new WebPageUnreadableError("The page has no readable text.");
     }
-    return { url: finalUrl, title: page.title, text };
+    return { ...page, text };
 }

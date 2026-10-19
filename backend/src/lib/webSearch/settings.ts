@@ -1,6 +1,9 @@
-export const WEB_SEARCH_BACKENDS = ["brave"] as const;
+export const WEB_SEARCH_BACKENDS = ["brave", "tavily", "deepseek"] as const;
 
 export type WebSearchBackend = (typeof WEB_SEARCH_BACKENDS)[number];
+
+export const isWebSearchBackend = (value: string): value is WebSearchBackend =>
+    (WEB_SEARCH_BACKENDS as readonly string[]).includes(value);
 
 export const WEB_SEARCH_FAMILY_CHOICES = {
     claude: ["provider", ...WEB_SEARCH_BACKENDS, "off"],

@@ -32,14 +32,14 @@ describe("web activity blocks", () => {
                 event={{
                     ...search,
                     results: [],
-                    error: "Web search is unavailable: no Brave Search API key is set up.",
+                    error: "Web search is unavailable: the chosen search service has no API key set up.",
                     error_code: "not_configured",
                 }}
             />,
         );
 
         expect(screen.getByText("Web search failed for “directors duties”")).toBeInTheDocument();
-        expect(screen.getByText(/no Brave Search API key is set up/)).toBeInTheDocument();
+        expect(screen.getByText(/has no API key set up/)).toBeInTheDocument();
     });
 
     it("shows why a page could not be read, without linking it", () => {

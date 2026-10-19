@@ -21,15 +21,39 @@ import { isProviderAvailable } from "@/app/lib/modelAvailability";
 import {
   getWebSearchSettings,
   updateWebSearchSettings,
+  WEB_SEARCH_BACKENDS,
+  type WebSearchBackend,
   type WebSearchSettings,
 } from "@/app/lib/mikeApi";
 import { notifyError } from "@/app/lib/userFacingError";
 
-const BRAVE_OPTION = {
-  value: "brave",
-  label: "Brave Search",
-  description: "Mike searches with Brave Search. Works with any model.",
+const SEARCH_SERVICES: Record<
+  WebSearchBackend,
+  { label: string; description: string; keyLabel: string }
+> = {
+  brave: {
+    label: "Brave Search",
+    description: "Mike searches with Brave Search. Works with any model.",
+    keyLabel: "Brave Search API Key",
+  },
+  tavily: {
+    label: "Tavily",
+    description: "Tavily searches and reads pages. Works with any model.",
+    keyLabel: "Tavily API Key",
+  },
+  deepseek: {
+    label: "DeepSeek Search",
+    description: "DeepSeek searches and reads pages. Works with any model.",
+    keyLabel: "DeepSeek API Key",
+  },
 };
+
+const SEARCH_SERVICE_OPTIONS: SettingsSelectOption[] = WEB_SEARCH_BACKENDS.map(
+  (backend) => {
+    const { label, description } = SEARCH_SERVICES[backend];
+    return { value: backend, label, description };
+  },
+);
 
 type Field = keyof WebSearchSettings;
 
@@ -137,7 +161,11 @@ export function WebSearchSection() {
   ).map(({ family, label, provider }) => ({
     family,
     label,
-    options: [{ value: "provider", ...provider }, BRAVE_OPTION, OFF_OPTION],
+    options: [
+      { value: "provider", ...provider },
+      ...SEARCH_SERVICE_OPTIONS,
+      OFF_OPTION,
+    ],
   }));
   const families: Array<{
     family: Family;
@@ -148,13 +176,15 @@ export function WebSearchSection() {
     {
       family: "other",
       label: providerFamilies.length > 0 ? "Other models" : "All models",
-      options: [BRAVE_OPTION, OFF_OPTION],
+      options: [...SEARCH_SERVICE_OPTIONS, OFF_OPTION],
     },
   ];
-  const braveChosen =
-    !!settings?.enabled &&
-    !!profile &&
-    families.some(({ family }) => settings[family] === "brave");
+  const chosenServices =
+    settings?.enabled && profile
+      ? WEB_SEARCH_BACKENDS.filter((backend) =>
+          families.some(({ family }) => settings[family] === backend),
+        )
+      : [];
 
   return (
     <section className="space-y-3" aria-labelledby="web-search-heading">
@@ -215,14 +245,15 @@ export function WebSearchSection() {
                   }
                 />
               ))}
-            {braveChosen && (
+            {chosenServices.map((service) => (
               <ApiKeyField
-                label="Brave Search API Key"
-                hasSavedKey={profile?.apiKeys.brave.source === "user"}
-                onSave={(value) => updateApiKey("brave", value.trim() || null)}
-                onRemove={() => updateApiKey("brave", null)}
+                key={service}
+                label={SEARCH_SERVICES[service].keyLabel}
+                hasSavedKey={profile?.apiKeys[service].source === "user"}
+                onSave={(value) => updateApiKey(service, value.trim() || null)}
+                onRemove={() => updateApiKey(service, null)}
               />
-            )}
+            ))}
           </>
         )}
       </GlassCardUI>
