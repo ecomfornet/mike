@@ -54,6 +54,48 @@ describe("AssistantMessage copy", () => {
     });
 });
 
+describe("AssistantMessage copy with web sources", () => {
+    afterEach(() => {
+        vi.restoreAllMocks();
+        vi.unstubAllGlobals();
+    });
+
+    it("adds the cited web pages to the copied answer", async () => {
+        const user = userEvent.setup();
+        const items: Record<string, Blob>[] = [];
+        vi.stubGlobal(
+            "ClipboardItem",
+            class {
+                constructor(public items: Record<string, Blob>) {}
+            },
+        );
+        const write = vi.fn(async (clipboardItems: { items: Record<string, Blob> }[]) => {
+            items.push(clipboardItems[0].items);
+        });
+        Object.defineProperty(navigator, "clipboard", {
+            configurable: true,
+            value: { ...navigator.clipboard, write },
+        });
+
+        render(
+            <AssistantMessage
+                events={[
+                    { type: "content", text: "The answer." },
+                    {
+                        type: "web_sources",
+                        sources: [{ url: "https://law.test/s172", title: "Section 172" }],
+                    },
+                ]}
+            />,
+        );
+        await user.click(screen.getByRole("button", { name: "Copy response" }));
+
+        const text = await items[0]["text/plain"].text();
+        expect(text).toContain("The answer.");
+        expect(text).toContain("Sources\nSection 172 https://law.test/s172");
+    });
+});
+
 describe("AssistantMessage web sources", () => {
     it("lists a page cited by several steps once, keeping its title", async () => {
         const user = userEvent.setup();

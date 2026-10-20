@@ -17,6 +17,7 @@ import { PreResponseWrapper } from "./PreResponseWrapper";
 import { ResponseStatus, type StatusState } from "./message/ResponseStatus";
 import { DocSearchBlock } from "./message/DocSearchBlock";
 import {
+    buildWebSourcesAppendix,
     WebReadBlock,
     WebSearchBlock,
     WebSourcesBlock,
@@ -315,8 +316,9 @@ export function AssistantMessage({
                 plainText = clone.textContent || "";
             }
             const appendix = buildCitationAppendix(citations);
-            html += appendix.html;
-            plainText += appendix.text;
+            const sourcesAppendix = buildWebSourcesAppendix(webSources);
+            html += appendix.html + sourcesAppendix.html;
+            plainText += appendix.text + sourcesAppendix.text;
             const item = new ClipboardItem({
                 "text/html": new Blob([html], { type: "text/html" }),
                 "text/plain": new Blob([plainText], { type: "text/plain" }),

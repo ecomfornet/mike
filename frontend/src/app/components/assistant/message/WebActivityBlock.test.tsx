@@ -1,6 +1,10 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { WebReadBlock, WebSearchBlock } from "./WebActivityBlock";
+import {
+    buildWebSourcesAppendix,
+    WebReadBlock,
+    WebSearchBlock,
+} from "./WebActivityBlock";
 
 const search = {
     type: "web_search" as const,
@@ -57,5 +61,27 @@ describe("web activity blocks", () => {
 
         expect(screen.getByText("This page could not be read.")).toBeInTheDocument();
         expect(screen.queryByRole("link")).not.toBeInTheDocument();
+    });
+});
+
+describe("buildWebSourcesAppendix", () => {
+    it("is empty without sources", () => {
+        expect(buildWebSourcesAppendix([])).toEqual({ html: "", text: "" });
+    });
+
+    it("lists each page with its title, linking only web addresses", () => {
+        const { html, text } = buildWebSourcesAppendix([
+            { url: "https://law.test/a?x=1&y=2", title: "Act <A>" },
+            { url: "javascript:alert(1)" },
+        ]);
+
+        expect(text).toBe(
+            "\nSources\nAct <A> https://law.test/a?x=1&y=2\njavascript:alert(1)",
+        );
+        expect(html).toBe(
+            '<section class="copied-web-sources"><h3>Sources</h3>' +
+                '<p><a href="https://law.test/a?x=1&amp;y=2">Act &lt;A&gt;</a></p>' +
+                "<p>javascript:alert(1)</p></section>",
+        );
     });
 });

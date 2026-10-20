@@ -80,7 +80,7 @@ function buildCitationSourceRows(citations: Citation[]): CitationSourceRow[] {
     return Array.from(rows.values());
 }
 
-function escapeHtmlText(value: string): string {
+export function escapeHtmlText(value: string): string {
     return value
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")

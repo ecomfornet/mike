@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
 import type { WebSource } from "@mike/contracts";
 import type { AssistantEvent } from "../../shared/types";
+import { escapeHtmlText } from "./CitationSources";
 import { EventBlock } from "./EventBlocks";
 import { EventDisclosureButton, EventLabel } from "./EventDisclosure";
 
@@ -22,6 +23,33 @@ function webAddress(url: string): { href: string | null; host: string } {
         };
     }
     return { href: null, host: url };
+}
+
+/** The cited web pages for a copied answer, which the sources block shows outside its text. */
+export function buildWebSourcesAppendix(sources: WebSource[]) {
+    if (sources.length === 0) return { html: "", text: "" };
+    const entries = sources.map((source) => ({
+        title: source.title?.trim(),
+        href: webAddress(source.url).href,
+        url: source.url,
+    }));
+    const text = [
+        "",
+        "Sources",
+        ...entries.map(({ title, url }) => (title ? `${title} ${url}` : url)),
+    ].join("\n");
+    const html = [
+        `<section class="copied-web-sources">`,
+        `<h3>Sources</h3>`,
+        ...entries.map(({ title, href, url }) => {
+            const label = escapeHtmlText(title || url);
+            return href
+                ? `<p><a href="${escapeHtmlText(href)}">${label}</a></p>`
+                : `<p>${label}</p>`;
+        }),
+        `</section>`,
+    ].join("");
+    return { html, text };
 }
 
 function WebPageName({
