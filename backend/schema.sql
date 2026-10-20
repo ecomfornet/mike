@@ -11145,6 +11145,7 @@ insert into public.schema_migrations (filename) values
   ('20261020_01_playbook_import_status.sql'),
   ('20261020_02_web_search_api_keys.sql'),
   ('20261020_03_playbook_import_target_version.sql'),
+  ('20261020_04_word_chat_workspaces.sql'),
   ('20261021_01_chat_subagent_runs.sql'),
   ('20261021_02_user_subagent_defaults.sql'),
   ('20261021_03_user_response_details.sql'),
@@ -11153,6 +11154,5 @@ insert into public.schema_migrations (filename) values
   ('20261024_01_org_keys_central_only.sql'),
   ('20261024_02_workspace_scoped_data_deletion.sql'),
   ('20261024_03_backfill_project_child_org_id.sql'),
-  ('20261024_04_org_member_data_policy.sql'),
-  ('20261016_01_word_chat_workspaces.sql')
+  ('20261024_04_org_member_data_policy.sql')
 on conflict (filename) do nothing;
