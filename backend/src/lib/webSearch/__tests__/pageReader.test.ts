@@ -55,6 +55,27 @@ describe("readWebPage", () => {
         expect(result.text).not.toContain("Copyright Example Law");
     });
 
+    it("decodes text in the charset the server declares", async () => {
+        guardedFetch.mockResolvedValue(
+            page(
+                new Uint8Array([0xa7, 0x31, 0x37, 0x32, 0x20, 0x43, 0x61, 0x66, 0xe9]),
+                'text/plain; charset="ISO-8859-1"',
+            ),
+        );
+
+        const result = await readWebPage("https://example.test/s172.txt");
+
+        expect(result.text).toBe("\u00a7172 Caf\u00e9");
+    });
+
+    it("decodes as UTF-8 when the declared charset is unknown", async () => {
+        guardedFetch.mockResolvedValue(page("caf\u00e9", "text/plain; charset=bogus"));
+
+        const result = await readWebPage("https://example.test/cafe.txt");
+
+        expect(result.text).toBe("caf\u00e9");
+    });
+
     it("reads a PDF served as a generic binary file", async () => {
         guardedFetch.mockResolvedValue(
             page("%PDF-1.7 ...", "application/octet-stream"),

@@ -2,6 +2,7 @@
 
 import { TextCardUI } from "@/shared/ui/TextCardUI";
 import { useRef, useState } from "react";
+import type { WebSource } from "@mike/contracts";
 import { Check, Copy } from "lucide-react";
 import type {
     AssistantEvent,
@@ -281,9 +282,18 @@ export function AssistantMessage({
         !!onOpenCitationSource ||
         (citation.kind !== "case" && !!onOpenDocument);
     // The pages an answer cites follow the answer, not the steps before it.
-    const webSources = (events ?? []).flatMap((event) =>
-        event.type === "web_sources" ? event.sources : [],
-    );
+    // Several provider steps can cite the same page, so list each URL once.
+    const webSourcesByUrl = new Map<string, WebSource>();
+    for (const event of events ?? []) {
+        if (event.type !== "web_sources") continue;
+        for (const source of event.sources) {
+            const existing = webSourcesByUrl.get(source.url);
+            if (!existing || (!existing.title && source.title)) {
+                webSourcesByUrl.set(source.url, source);
+            }
+        }
+    }
+    const webSources = [...webSourcesByUrl.values()];
     const showCitationBlock =
         !!citationStatus || (!isStreaming && citations.length > 0);
     const handleCopy = async () => {
