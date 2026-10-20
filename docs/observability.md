@@ -46,7 +46,7 @@ with SENTRY_DISABLED=true or point SENTRY_DSN at your own project.`
 
 **Public DSN does not mean public error reports.** A DSN lets an SDK submit
 events; it does not grant access to read stored events or administer the
-Sentry organization. Mike's default reports go to the maintainers' `mike-xp`
+Sentry organization. Mike's default reports go to the maintainers' `open-legal-products`
 organization. The source-map upload token (`SENTRY_AUTH_TOKEN`) is a separate,
 privileged secret and must never appear in source or browser bundles. See
 [Sentry's explanation of public DSNs](https://www.sentry.help/en/articles/13964341-my-dsn-key-is-publicly-visible-is-this-a-security-vulnerability).
