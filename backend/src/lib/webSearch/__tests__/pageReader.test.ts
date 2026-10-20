@@ -1,11 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { guardedFetch, extractPdfTextForModel } = vi.hoisted(() => ({
+const { guardedFetch, validateRemoteMcpUrl, extractPdfTextForModel } = vi.hoisted(() => ({
     guardedFetch: vi.fn(),
+    validateRemoteMcpUrl: vi.fn(),
     extractPdfTextForModel: vi.fn(),
 }));
 
-vi.mock("../../mcp/client", () => ({ guardedFetch }));
+vi.mock("../../mcp/client", () => ({ guardedFetch, validateRemoteMcpUrl }));
 vi.mock("../../pdfText", () => ({ extractPdfTextForModel }));
 
 import { BlockedDestinationError } from "../../blockedDestination";
@@ -38,6 +39,8 @@ async function unreadable(promise: Promise<unknown>): Promise<string> {
 
 beforeEach(() => {
     guardedFetch.mockReset();
+    validateRemoteMcpUrl.mockReset();
+    validateRemoteMcpUrl.mockImplementation(async (url: string) => url);
     vi.unstubAllGlobals();
 });
 
@@ -130,6 +133,24 @@ describe("readWebPage", () => {
         });
 
         expect(result.text).toBe("The order.");
+    });
+
+    it("does not send a private address to the search service", async () => {
+        const fetch = vi.fn(async () => Response.json({ content: "secret" }));
+        vi.stubGlobal("fetch", fetch);
+        validateRemoteMcpUrl.mockRejectedValue(
+            new BlockedDestinationError("Web page URL resolves to a blocked network address."),
+        );
+
+        await expect(
+            unreadable(
+                readWebPage("http://169.254.169.254/latest/meta-data/", {
+                    account: { backend: "tavily", apiKey: "key" },
+                }),
+            ),
+        ).resolves.toBe("That address is not a public web page.");
+        expect(fetch).not.toHaveBeenCalled();
+        expect(guardedFetch).not.toHaveBeenCalled();
     });
 
     it("explains a blocked address", async () => {

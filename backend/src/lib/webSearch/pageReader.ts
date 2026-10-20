@@ -1,5 +1,5 @@
 import { isBlockedDestinationError } from "../blockedDestination";
-import { guardedFetch } from "../mcp/client";
+import { guardedFetch, validateRemoteMcpUrl } from "../mcp/client";
 import { extractPdfTextForModel } from "../pdfText";
 import { withTimeout } from "./http";
 import { SEARCH_SERVICES } from "./services";
@@ -156,12 +156,31 @@ type ReadOptions = {
     account?: WebSearchAccount | null;
 };
 
+async function assertPublicAddress(url: string): Promise<void> {
+    try {
+        await validateRemoteMcpUrl(url, "Web page URL", { allowHttp: true });
+    } catch (error) {
+        if (isBlockedDestinationError(error)) {
+            throw new WebPageUnreadableError(
+                "That address is not a public web page.",
+                { cause: error },
+            );
+        }
+        throw new WebPageUnreadableError("The page could not be reached.", {
+            cause: error,
+        });
+    }
+}
+
 async function readThroughSearchService(
     url: string,
     { signal, account }: ReadOptions,
 ): Promise<WebPage | null> {
     const service = account ? SEARCH_SERVICES[account.backend] : null;
     if (!account || !service?.read) return null;
+    // A private or internal address must not reach a third-party reader,
+    // which would otherwise fetch or log it.
+    await assertPublicAddress(url);
     try {
         const page = await service.read(url, account.apiKey, { fetch, signal });
         return page.text ? page : null;
