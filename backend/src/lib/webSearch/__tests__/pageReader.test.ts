@@ -71,6 +71,20 @@ describe("readWebPage", () => {
         expect(result.text).toBe("\u00a7172 Caf\u00e9");
     });
 
+    it.each([
+        ['<meta charset="iso-8859-1">'],
+        ['<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">'],
+    ])("decodes HTML in the charset its %s declares", async (meta) => {
+        const html = `<html><head>${meta}<title>Act</title></head><body><article><p>Section \u00a7172 applies to the Caf\u00e9 Company.</p></article></body></html>`;
+        guardedFetch.mockResolvedValue(
+            page(Uint8Array.from(html, (c) => c.charCodeAt(0)), "text/html"),
+        );
+
+        const result = await readWebPage("https://example.test/act");
+
+        expect(result.text).toContain("Section \u00a7172 applies to the Caf\u00e9 Company.");
+    });
+
     it("decodes as UTF-8 when the declared charset is unknown", async () => {
         guardedFetch.mockResolvedValue(page("caf\u00e9", "text/plain; charset=bogus"));
 

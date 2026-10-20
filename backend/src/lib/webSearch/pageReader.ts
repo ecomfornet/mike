@@ -76,6 +76,13 @@ async function htmlToMarkdown(
     return { title: page.title?.trim() || null, text: page.content ?? "" };
 }
 
+// Many HTML pages declare their encoding only in a <meta> tag. Browsers look
+// for it in the first 1024 bytes, which are ASCII whatever the encoding.
+function metaCharset(body: ArrayBuffer): string | null {
+    const head = new TextDecoder("latin1").decode(body.slice(0, 1024));
+    return /<meta[^>]+charset\s*=\s*["']?\s*([\w.:-]+)/i.exec(head)?.[1] ?? null;
+}
+
 // Older court and legislation sites still serve windows-1252 or ISO-8859-1,
 // where decoding as UTF-8 would corrupt characters such as "§".
 function decodeText(body: ArrayBuffer, charset: string | null): string {
@@ -140,7 +147,10 @@ async function readDirectly(
     if (contentType === "text/html" || contentType === "application/xhtml+xml") {
         return {
             url: finalUrl,
-            ...(await htmlToMarkdown(decodeText(body, charset), finalUrl)),
+            ...(await htmlToMarkdown(
+                decodeText(body, charset ?? metaCharset(body)),
+                finalUrl,
+            )),
         };
     }
     if (contentType.startsWith("text/")) {
