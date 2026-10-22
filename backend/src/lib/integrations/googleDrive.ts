@@ -258,6 +258,8 @@ export async function completeGoogleDriveOAuth(
     code: string,
     db: Db = createServerSupabase(),
 ): Promise<{ userId: string }> {
+    // A state outlives a restart that switches Drive off; refuse the grant.
+    assertGoogleDriveAvailable();
     const { data, error } = await db
         .from(OAUTH_STATES_TABLE)
         .select("*")

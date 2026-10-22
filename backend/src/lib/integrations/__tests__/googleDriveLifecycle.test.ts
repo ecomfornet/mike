@@ -521,5 +521,16 @@ describe("Google Drive OAuth lifecycle", () => {
         });
         await disconnectGoogleDrive("u1", store.db);
         expect((await getGoogleDriveStatus("u1", store.db)).connected).toBe(false);
+    });    it("refuses an OAuth callback that finishes after Drive is switched off", async () => {
+        const store = driveDb();
+        const state = await begin(store);
+        vi.stubEnv("GOOGLE_WORKSPACE_DISABLED_PROVIDERS", "google-drive");
+        const fetchMock = vi.fn(async () => json(tokens));
+        vi.stubGlobal("fetch", fetchMock);
+        await expect(
+            completeGoogleDriveOAuth("u1", state, "code", store.db),
+        ).rejects.toMatchObject({ code: "connector_unavailable" });
+        expect(fetchMock).not.toHaveBeenCalled();
+        expect(store.tokens).toHaveLength(0);
     });
 });
