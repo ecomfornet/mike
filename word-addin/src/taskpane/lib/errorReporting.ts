@@ -218,9 +218,9 @@ export function reportWordFailure(
   error: unknown,
   context: {
     /**
-     * Low-cardinality step name: "resolve", "restore", "reveal", ... Omit
-     * for a step the vocabulary has no name for (applying an edit); the
-     * operation then carries the grouping on its own.
+     * Low-cardinality step name: "resolve", "restore", "reveal", "apply",
+     * ... Omit for a step the vocabulary has no name for; the operation
+     * then carries the grouping on its own.
      */
     stage?: string;
     /** The user-level flow: reading the document, applying or resolving an edit. */

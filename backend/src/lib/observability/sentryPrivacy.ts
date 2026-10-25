@@ -28,7 +28,7 @@ export const OPERATIONS = [
   'chat.turn', 'chat.title', 'chat.subagent', 'chat.tool', 'chat.web_search', 'chat.mcp', 'project_chat.turn', 'word_chat.turn',
   'tabular.cell', 'tabular.row', 'tabular.run', 'tabular.chat',
   'playbooks.import', 'playbooks.review', 'playbooks.save',
-  'workflows.run', 'workflows.sync', 'quick_actions.run', 'audit.write',
+  'workflows.run', 'workflows.sync', 'workflows.import_addon', 'quick_actions.run', 'audit.write',
   'google.drive', 'google.gmail', 'google.calendar',
   'auth.signin', 'auth.signup', 'auth.session', 'auth.mfa', 'auth.handoff',
   'jobs.dispatch', 'storage.cleanup', 'memory.consolidate', 'memory.read', 'export.build', 'account.delete',
@@ -46,7 +46,7 @@ export const STAGES = [
   'sealed-source-after-process', 'failed-file-sealed', 'session-expiry', 'seal-mismatch', 'seal-recover', 'session-cancel', 'user-prefix-cleanup', 'failed-document-remove',
   'import.read', 'import.check', 'import.extract', 'import.compile', 'import.validate', 'import.store', 'import.save', 'import.record',
   'import.cleanup', 'review.model', 'review.apply_edits', 'review.save', 'review.record', 'job.terminal', 'assistant-edit-conflict', 'edit-resolution-conflict',
-  'org-playbook-purge', 'optional-read',
+  'org-playbook-purge', 'optional-read', 'apply',
 ] as const;
 export type Stage = (typeof STAGES)[number];
 
@@ -67,9 +67,10 @@ export const ERROR_KINDS = [
   'memory.conversation_not_quiet', 'memory.consolidation_failed',
   'dbq.deferred', 'dbq.non_retryable', 'dbq.unknown_job_kind', 'dbq.enqueue_failed', 'dbq.failure_hook_crashed',
   'queue.enqueue_failed',
-  'auth.session_lookup_failed', 'auth.mfa_assurance_failed', 'auth.handoff_failed', 'auth.supabase_unavailable',
+  'auth.session_lookup_failed', 'auth.mfa_assurance_failed', 'auth.handoff_failed', 'auth.supabase_unavailable', 'auth.sso_failed', 'auth.password_reset_failed',
   'audit.write_failed', 'export.failed', 'account.delete_failed', 'user.api_key_failed',
-  'workflows.sync_failed', 'workflows.addon_failed', 'workflows.default_install_failed', 'word.session_failed',
+  'workflows.sync_failed', 'workflows.addon_failed', 'workflows.default_install_failed', 'word.session_failed', 'word.chat_lookup_failed',
+  'settings.read_failed',
   'db.query_failed', 'db.rpc_failed', 'user_facing',
 ] as const;
 export type ErrorKind = (typeof ERROR_KINDS)[number];

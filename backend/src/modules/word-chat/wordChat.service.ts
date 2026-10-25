@@ -187,7 +187,7 @@ async function getAccessibleWordChat(
   if (error)
     return {
       ok: false,
-      error: wordFailure("word.session_failed", "Word chat lookup failed", error),
+      error: wordFailure("word.chat_lookup_failed", "Word chat lookup failed", error),
     };
   if (!data) return { ok: true, value: null };
   return {
@@ -271,7 +271,7 @@ export async function listWordChats(
       ? query.range(args.offset, args.offset + args.limit - 1)
       : query.limit(args.limit);
   const { data, error } = await query;
-  if (error) return serviceFailure("word.session_failed", "Word chat list failed", error);
+  if (error) return serviceFailure("word.chat_lookup_failed", "Word chat list failed", error);
   return {
     ok: true,
     chats: (data ?? []).map((chat) => ({ ...chat, project_id: null })),

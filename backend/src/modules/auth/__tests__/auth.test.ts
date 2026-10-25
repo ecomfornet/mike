@@ -539,7 +539,7 @@ describe("auth routes", () => {
       AppError,
       { level?: string },
     ];
-    expect(failure.kind).toBe("auth.supabase_unavailable");
+    expect(failure.kind).toBe("auth.password_reset_failed");
     expect(failure.cause).toBe(cause);
     expect(context.level).toBe("warning");
   });
@@ -560,7 +560,7 @@ describe("auth routes", () => {
     expect(reportError).toHaveBeenCalledOnce();
     const [failure] = reportError.mock.calls[0] as unknown as [AppError];
     expect(failure).toBeInstanceOf(AppError);
-    expect(failure.kind).toBe("auth.supabase_unavailable");
+    expect(failure.kind).toBe("auth.sso_failed");
     expect(failure.cause).toBe(cause);
     consoleError.mockRestore();
   });

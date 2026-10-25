@@ -38,7 +38,9 @@ function reportEscapedWordFailure(
       ? (error as { status?: unknown }).status
       : undefined;
   if (typeof status === "number") return;
-  reportWordFailure(error, { operation });
+  // Applying an edit has a stage name of its own now, so an apply failure is
+  // distinguishable from the resolve and restore steps of the same flow.
+  reportWordFailure(error, { operation, stage: operation === "word.edit_apply" ? "apply" : undefined });
 }
 
 /**
