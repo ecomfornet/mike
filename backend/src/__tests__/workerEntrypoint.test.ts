@@ -3,6 +3,7 @@ import { spawn } from "node:child_process";
 import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 
 // `node dist/worker.js` is the documented standalone-worker topology
 // (WORKERS_MODE=none on the API, workers on their own container). Everything
@@ -26,7 +27,7 @@ describe("standalone worker entrypoint", () => {
             process.execPath,
             [
                 "--import",
-                path.join(backendRoot, "node_modules/tsx/dist/loader.mjs"),
+                pathToFileURL(path.join(backendRoot, "node_modules/tsx/dist/loader.mjs")).href,
                 path.join(backendRoot, "src/worker.ts"),
             ],
             {
@@ -91,7 +92,7 @@ describe("standalone worker entrypoint", () => {
             process.execPath,
             [
                 "--import",
-                path.join(backendRoot, "node_modules/tsx/dist/loader.mjs"),
+                pathToFileURL(path.join(backendRoot, "node_modules/tsx/dist/loader.mjs")).href,
                 path.join(backendRoot, "src/worker.ts"),
             ],
             { cwd: workDir, stdio: "ignore", env },

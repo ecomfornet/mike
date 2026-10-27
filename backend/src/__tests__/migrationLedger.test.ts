@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { execFileSync } from "node:child_process";
 import {
+    existsSync,
     mkdtempSync,
     readFileSync,
     readdirSync,
@@ -65,17 +66,23 @@ describe("migrate.sh transaction detection", () => {
     // Calls a predicate function from the script on one file. Exit 1 is the
     // predicate's "no"; anything else is rethrown so it cannot pass as a "no".
     // A script that fails to source also exits 1, hence the explicit 99.
+    const bashCmd =
+        process.platform === "win32" &&
+        existsSync("C:\\Program Files\\Git\\bin\\bash.exe")
+            ? "C:\\Program Files\\Git\\bin\\bash.exe"
+            : "bash";
+
     const ask = (fn: string, file: string) => {
         try {
             execFileSync(
-                "bash",
+                bashCmd,
                 [
                     "-c",
                     'source "$1" || exit 99; "$2" "$3"',
                     "test",
-                    script,
+                    script.replaceAll("\\", "/"),
                     fn,
-                    file,
+                    file.replaceAll("\\", "/"),
                 ],
                 { stdio: "pipe" },
             );
@@ -152,7 +159,7 @@ describe("migrate.sh transaction detection", () => {
             unmarked,
             "add a `-- migrate:no-transaction` line to a new migration that cannot run in a transaction",
         ).toEqual(unmarkedOutsideTransaction);
-    });
+    }, 60_000);
 });
 
 describe("docker-compose db-init", () => {

@@ -18,11 +18,17 @@ let officeFileToPdf: typeof import("../convert.js").officeFileToPdf;
 beforeEach(async () => {
   directory = await mkdtemp(join(tmpdir(), "mike-convert-test-"));
   // Stand in for a soffice process that never exits.
-  const binary = join(directory, "soffice");
+  const isWin = process.platform === "win32";
+  const binary = join(directory, isWin ? "soffice.cmd" : "soffice");
   // Replace the shell with the sleeper so SIGKILL targets the process holding
   // the stdio pipes too. Otherwise the orphaned `sleep` keeps stderr open and
   // Node cannot emit `close` until the full 30 seconds have elapsed.
-  await writeFile(binary, "#!/bin/sh\nexec sleep 30\n");
+  await writeFile(
+    binary,
+    isWin
+      ? '@echo off\r\npowershell -NoProfile -Command "Start-Sleep -Seconds 30"\r\n'
+      : "#!/bin/sh\nexec sleep 30\n",
+  );
   await chmod(binary, 0o755);
   process.env.SOFFICE_BINARY_PATH = binary;
   vi.resetModules();
@@ -59,9 +65,13 @@ describe("office conversion deadline", () => {
 
 it("distinguishes an unavailable converter from a rejected document without stderr", async () => {
   timing.timeoutMs = 5000;
+  const isWin = process.platform === "win32";
+  const binary = join(directory, isWin ? "soffice.cmd" : "soffice");
   await writeFile(
-    join(directory, "soffice"),
-    '#!/bin/sh\necho "PRIVATE_DOCUMENT" >&2\nexit 1\n',
+    binary,
+    isWin
+      ? '@echo off\r\n>&2 echo PRIVATE_DOCUMENT\r\nexit /b 1\r\n'
+      : '#!/bin/sh\necho "PRIVATE_DOCUMENT" >&2\nexit 1\n',
   );
   const failure = await officeFileToPdf(
     join(directory, "PRIVATE_DOCUMENT.docx"),
@@ -90,9 +100,13 @@ it("distinguishes an unavailable converter from a rejected document without stde
 // conversion and the operator log lost LibreOffice's own explanation.
 it("reports a clean soffice exit that wrote no PDF as a failed conversion", async () => {
   timing.timeoutMs = 5000;
+  const isWin = process.platform === "win32";
+  const binary = join(directory, isWin ? "soffice.cmd" : "soffice");
   await writeFile(
-    join(directory, "soffice"),
-    '#!/bin/sh\necho "Error: source file could not be loaded" >&2\nexit 0\n',
+    binary,
+    isWin
+      ? '@echo off\r\n>&2 echo Error: source file could not be loaded\r\nexit /b 0\r\n'
+      : '#!/bin/sh\necho "Error: source file could not be loaded" >&2\nexit 0\n',
   );
   const failure = await officeFileToPdf(
     join(directory, "PRIVATE_DOCUMENT.docx"),

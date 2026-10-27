@@ -117,8 +117,10 @@ async function fetchJson(url, init, { attempts = 3, timeoutMs = 30_000 } = {}) {
 }
 
 async function loadNpmReport() {
-  const registry = execFileSync("npm", ["config", "get", "registry"], {
+  const npmCmd = process.platform === "win32" ? "npm.cmd" : "npm";
+  const registry = execFileSync(npmCmd, ["config", "get", "registry"], {
     encoding: "utf8",
+    shell: process.platform === "win32",
   }).trim().replace(/\/$/, "");
   const endpoint = `${registry}/-/npm/v1/security/advisories/bulk`;
   const report = {};

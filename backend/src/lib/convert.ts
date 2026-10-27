@@ -194,14 +194,21 @@ export async function officeFileToPdf(
           outputDirectory,
           inputPath,
         ],
-        { stdio: ["ignore", "ignore", "pipe"] },
+        {
+          stdio: ["ignore", "ignore", "pipe"],
+          shell: process.platform === "win32",
+        },
       );
       let timedOut = false;
       // LibreOffice can wedge on a malformed document and never exit, which
       // would hold this worker slot for the life of the process.
       const deadline = setTimeout(() => {
         timedOut = true;
-        child.kill("SIGKILL");
+        if (process.platform === "win32" && child.pid) {
+          spawn("taskkill", ["/pid", child.pid.toString(), "/T", "/F"]);
+        } else {
+          child.kill("SIGKILL");
+        }
       }, timeoutMs);
       deadline.unref();
       child.stderr.on("data", (chunk) => {

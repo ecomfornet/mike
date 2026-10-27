@@ -3,6 +3,7 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { createServer, type Server } from "node:http";
 import { once } from "node:events";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 
 // The document-lifecycle guard exists to stop code from serving requests the
 // database cannot back (deletes that orphan storage, uploads that fail on a
@@ -42,7 +43,7 @@ async function runEntrypoint(
 ): Promise<{ code: number | null; output: string }> {
     const child: ChildProcess = spawn(
         process.execPath,
-        ["--import", path.join(backendRoot, "node_modules/tsx/dist/loader.mjs"), path.join(backendRoot, file)],
+        ["--import", pathToFileURL(path.join(backendRoot, "node_modules/tsx/dist/loader.mjs")).href, path.join(backendRoot, file)],
         { cwd: backendRoot, stdio: ["ignore", "pipe", "pipe"], env: { ...process.env, ...env } },
     );
     let output = "";

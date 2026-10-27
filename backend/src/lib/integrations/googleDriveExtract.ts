@@ -1,5 +1,6 @@
 import { fork } from "node:child_process";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { googleDriveLimits } from "./googleDriveLimits";
 import { GoogleDriveUserError } from "./googleDriveHttp";
 
@@ -22,12 +23,13 @@ export async function extractGoogleDriveBinary(
     try {
         return await new Promise<string>((resolve, reject) => {
             const extension = __filename.endsWith(".ts") ? "ts" : "js";
+            const tsxLoader = extension === "ts" ? pathToFileURL(require.resolve("tsx", { paths: [__dirname] })).href : "";
             const child = fork(
                 path.join(__dirname, `googleDriveExtractChild.${extension}`),
                 [],
                 {
                     execArgv: [
-                        ...(extension === "ts" ? ["--import", "tsx"] : []),
+                        ...(extension === "ts" ? ["--import", tsxLoader] : []),
                         `--max-old-space-size=${limits.parserHeapMb}`,
                     ],
                     stdio: ["ignore", "ignore", "ignore", "ipc"],

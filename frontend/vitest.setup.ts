@@ -11,3 +11,21 @@ import { Blob as NodeBlob } from "node:buffer";
 // `node:buffer`) keeps `response.blob()` usable the same way on every
 // supported Node version. See #361.
 globalThis.Blob = NodeBlob as unknown as typeof Blob;
+
+// Normalize default number and compact currency formatting to en-US across all host locales.
+const OrigNumberFormat = Intl.NumberFormat;
+// @ts-ignore
+Intl.NumberFormat = function (locales = "en-US", options?: Intl.NumberFormatOptions) {
+  return new OrigNumberFormat(locales || "en-US", options);
+} as unknown as typeof Intl.NumberFormat;
+Intl.NumberFormat.prototype = OrigNumberFormat.prototype;
+Intl.NumberFormat.supportedLocalesOf = OrigNumberFormat.supportedLocalesOf;
+
+const origToLocaleString = Number.prototype.toLocaleString;
+Number.prototype.toLocaleString = function (
+  this: number,
+  locales: Intl.LocalesArgument = "en-US",
+  options?: Intl.NumberFormatOptions,
+) {
+  return origToLocaleString.call(this, locales || "en-US", options);
+};

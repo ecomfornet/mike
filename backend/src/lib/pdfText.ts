@@ -3,7 +3,7 @@ import path from "path";
 export const STANDARD_FONT_DATA_URL = (() => {
   try {
     const pkgPath = require.resolve("pdfjs-dist/package.json");
-    return path.join(path.dirname(pkgPath), "standard_fonts") + path.sep;
+    return path.join(path.dirname(pkgPath), "standard_fonts").replaceAll("\\", "/") + "/";
   } catch {
     return undefined;
   }
